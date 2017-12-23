@@ -1,0 +1,8 @@
+errbot
+errbot[slack]
+
+## plugins/SQL
+jsonpickle
+sqlalchemy
+psycopg2
+riprova

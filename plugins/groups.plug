@@ -1,0 +1,10 @@
+[Core]
+Name = groups
+Module = groups
+DependsOn = gutils
+
+[Python]
+Version = 3
+
+[Documentation]
+Description = Groups base plugin

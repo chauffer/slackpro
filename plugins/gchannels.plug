@@ -1,0 +1,10 @@
+[Core]
+Name = gchannels
+Module = gchannels
+DependsOn = gutils
+
+[Python]
+Version = 3
+
+[Documentation]
+Description = Handle access for Groups to Slack private channels

@@ -1,0 +1,9 @@
+[Core]
+Name = gcoldstorage
+Module = gcoldstorage
+
+[Python]
+Version = 3
+
+[Documentation]
+Description = Store key/value in dedicated table

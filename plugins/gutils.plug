@@ -1,0 +1,10 @@
+[Core]
+Name = gutils
+Module = gutils
+DependsOn = gcoldstorage
+
+[Python]
+Version = 3
+
+[Documentation]
+Description = Utils functions for Groups
