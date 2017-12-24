@@ -13,14 +13,7 @@ class Gchannels(BotPlugin):
     def activate(self):
         super().activate()
 
-        # Initialize DB
-        for i in ('channels_to_groups', 'groups_to_channels'):
-            try:
-                _ = self[i]
-            except KeyError:
-                self[i] = {}
-
-        # Initialize Devaudit
+        # Initialize Gutils
         self.gutils = self.get_plugin('gutils')
 
     @botcmd
@@ -36,31 +29,18 @@ class Gchannels(BotPlugin):
         if not self.gutils.is_user_in_group(msg.frm.userid, group):
             return 'You are not in that group.'
 
-        try:
-            _ = self[f'shared:{channel}:{group}']
-        except KeyError:
-            pass
-        else:
+        if self.gutils.get_channel(channel, group):
             return f'Channel is already shared with {group}.'
 
-        self[f'shared:{channel}:{group}'] = {
+        data = {
             'at': datetime.datetime.now().isoformat(),
             'by': msg.frm.userid,
             'autoinvite': autoinvite,
         }
-        self.gutils.audit(msg.frm.userid, 'channel_share_success', group, channel)
+        self.gutils.share_channel(msg.frm.userid, channel, group, data)
 
-        with self.mutable('channels_to_groups') as d:
-            if channel in d.keys():
-                d[channel].append(group)
-            else:
-                d[channel] = [group]
-
-        with self.mutable('groups_to_channels') as d:
-            if group in d.keys():
-                d[group].append(msg.frm.channelid)
-            else:
-                d[group] = [msg.frm.channelid]
+        self.gutils.autoinvite_handle_channel(group, channel)
+        self.gutils.audit(msg.frm.userid, 'channel_shared', group, channel)
 
         return f'This channel was shared with {group}.'
 
@@ -72,7 +52,7 @@ class Gchannels(BotPlugin):
         for group in self.gutils.get_groups_of_user(msg.frm.userid):
             output.append(f'For group `{group}`, you can join:')
 
-            for channel in self._get_channels_of_group(group):
+            for channel in self.gutils.get_channels_of_group(group):
                 channel = self._bot.channelid_to_channelname(channel)
                 output.append(f' - #{channel}')
 
@@ -89,19 +69,8 @@ class Gchannels(BotPlugin):
             return 'Usage: .channel join <channel>'
 
         channel = self._bot.channelname_to_channelid(args[0])
-        if channel not in self._get_channels_of_user(msg.frm.userid):
+        if channel not in self.gutils.get_channels_of_user(msg.frm.userid):
             return 'You cannot join that channel.'
 
         self._bot.query_room(channel).invite(msg.frm.nick)
         return 'Invited! :yay:'
-
-    def _get_channels_of_group(self, group):
-        if group not in self['groups_to_channels'].keys():
-            return []
-        return self['groups_to_channels'][group]
-
-    def _get_channels_of_user(self, userid):
-        channels = []
-        for group in self.gutils.get_groups_of_user(userid):
-            channels += self._get_channels_of_group(group)
-        return channels

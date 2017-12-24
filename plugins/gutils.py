@@ -9,19 +9,20 @@ class Gutils(BotPlugin):
 
     def activate(self):
         super().activate()
-
-        # Init incr key
-        try:
-            _ = self['audit_incr']
-        except:
-            self['audit_incr'] = 0
+        db_items = (
+            ('groups', dict),
+            ('users', dict),
+            ('channel_to_groups', dict),
+            ('group_to_channels', dict),
+            ('audit_incr', int),
+        )
 
         # Initialize DB
-        for i in ('groups', 'users'):
+        for key, method in db_items:
             try:
-                _ = self[i]
+                _ = self[key]
             except KeyError:
-                self[i] = {}
+                self[key] = method()
 
         # Initialize Gcoldstorage
         self.store = self.get_plugin('gcoldstorage').store
@@ -69,8 +70,16 @@ class Gutils(BotPlugin):
         except (KeyError, IndexError):
             return []
 
-    def put_user_in_group(self, userid, group, value):
-        self[f'user:{userid}:{group}'] = value
+    def get_users_of_group(self, group):
+        try:
+            if group not in self['groups']:
+                return None
+            return self['groups'][group]['members']
+        except (KeyError, IndexError):
+            return None
+
+    def put_user_in_group(self, userid, group, extras):
+        self[f'user:{userid}:{group}'] = extras
 
         with self.mutable('users') as users:
             user = users.get(userid)
@@ -90,3 +99,47 @@ class Gutils(BotPlugin):
                     'at': datetime.datetime.now().isoformat(),
                     'by': userid,
                 }
+        self.autoinvite_handle_user(group, userid)
+
+    def get_channels_of_group(self, group):
+        if group not in self['group_to_channels'].keys():
+            return []
+        return self['group_to_channels'][group]
+
+    def get_channels_of_user(self, userid):
+        channels = []
+        for group in self.get_groups_of_user(userid):
+            channels += self.get_channels_of_group(group)
+        return channels
+
+    def get_channel(self, channel, group):
+        try:
+            return self[f'channel_share:{channel}:{group}']
+        except:
+            return None
+
+    def autoinvite_handle_user(self, group, userid):
+        for channel in self.get_channels_of_group(group):
+             if self.get_channel(channel, group).get('autoinvite'):
+                self._bot.query_room(channel).invite(userid)
+
+    def autoinvite_handle_channel(self, group, channel):
+        for user in self.get_users_of_group(group):
+             if self.get_channel(channel, group).get('autoinvite'):
+                 for userid in self.get_users_of_group(group):
+                     self._bot.query_room(channel).invite(userid)
+
+    def share_channel(self, userid, channel, group, data):
+        self[f'channel_share:{channel}:{group}'] = data
+
+        with self.mutable('channel_to_groups') as d:
+            if channel in d.keys():
+                d[channel].append(group)
+            else:
+                d[channel] = [group]
+
+        with self.mutable('group_to_channels') as d:
+            if group in d.keys():
+                d[group].append(channel)
+            else:
+                d[group] = [channel]
