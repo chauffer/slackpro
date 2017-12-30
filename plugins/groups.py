@@ -23,13 +23,17 @@ class Groups(BotPlugin):
         if args:
             user = self.gutils._get_user_group(msg.frm.userid, args[0])
             if not user:
-                return 'Nope.'
+                return f'You are not in group {args[0]}.'
             else:
-                return str(user)
+                by = self._bot.userid_to_username(user['by_id'])
+                on = user['timestamp'].split('.')[0].replace('T', ' ')
+                return (
+                    f'You were added to **{args[0]}** '
+                    f'on **{on}** by **@{by}**'
+                )
         else:
-            try:
-                groups = self.gutils.get_groups_of_user(msg.frm.userid)
-            except:
+            groups = self.gutils.get_groups_of_user(msg.frm.userid)
+            if not groups:
                 return 'You are not in any groups :disappointed:'
             return ', '.join(groups)
 
