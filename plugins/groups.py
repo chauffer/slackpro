@@ -40,7 +40,14 @@ class Groups(BotPlugin):
     @botcmd
     def group_list(self, msg, args):
         '''Usage: .group list - List all groups'''
-        return ', '.join(self.gutils.read_key('groups').keys())
+        msg = ['List of groups:']
+        for group, info in self.gutils.read_key('groups').items():
+            msg.append(f"**`{group}`** ({len(info['members'])} members)")
+
+        if len(msg) == 1:
+            msg.append('None :disappointed:')
+
+        return '\n\n'.join(msg)
 
     @botcmd
     def group_add(self, msg, args):
