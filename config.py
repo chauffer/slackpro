@@ -3,7 +3,7 @@ import os
 import sys
 
 BACKEND = 'Slack'
-CORE_PLUGINS = ('Help','Utils','Health', 'Plugins')
+CORE_PLUGINS = os.getenv('SLACKPRO_CORE_PLUGINS', 'Help')
 
 BOT_PREFIX = '.'
 MESSAGE_SIZE_LIMIT = 4000
