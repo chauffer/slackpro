@@ -15,6 +15,10 @@ log = logging.getLogger('errbot.storage.sql')
 
 DATA_URL_ENTRY = 'data_url'
 
+def on_retry(err, next_try):
+    print('Error exception: {}'.format(err))
+    print('Next try in {}ms'.format(next_try))
+
 
 class KV(object):
     """This is a basic key/value. Pickling in JSON."""
@@ -95,7 +99,7 @@ class SQLPlugin(StoragePluginBase):
         self._sessionmaker = sessionmaker()
         self._sessionmaker.configure(bind=self._engine)
 
-    @riprova.retry(backoff=riprova.ExponentialBackOff(factor=0.5))
+    @riprova.retry(on_retry=on_retry)
     def open(self, namespace: str) -> StorageBase:
 
         # Create a table with the given namespace
